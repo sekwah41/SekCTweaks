@@ -1,0 +1,16 @@
+[
+{
+  "modid": "sekctweaks",
+  "name": "SekCTweaks",
+  "description": "A series of tweaks I have made to make Minecraft a little nicer in various ways. Just little tweaks I have come up with or have been suggested that I like.",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "http://www.sekwah.com/",
+  "updateUrl": "",
+  "authorList": ["Sekwah41"],
+  "credits": "",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
