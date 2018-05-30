@@ -1,16 +1,27 @@
 package com.sekwah.sekctweaks.gui;
 
 import java.util.Arrays;
+
+import com.google.common.collect.Lists;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiListExtended;
+import net.minecraft.client.gui.GuiSlot;
+import net.minecraft.client.renderer.BufferBuilder;
+import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.client.settings.KeyBinding;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.commons.lang3.ArrayUtils;
 
+/**
+ * @see net.minecraft.client.gui.GuiLanguage for selective list
+ */
 @SideOnly(Side.CLIENT)
 public class GuiKeyBindingListTweaked extends GuiListExtended
 {
@@ -21,12 +32,15 @@ public class GuiKeyBindingListTweaked extends GuiListExtended
 
     public GuiKeyBindingListTweaked(GuiControlsTweaked controls, Minecraft mcIn)
     {
-        super(mcIn, controls.width + 45, controls.height, 63, controls.height - 32, 20);
+        super(mcIn, 450, controls.height, 63, controls.height - 32, 20);
+        this.width = 420;
+        this.right = controls.width - 20;
+        this.left = this.right - this.width;
         this.controlsScreen = controls;
         this.mc = mcIn;
-        KeyBinding[] akeybinding = (KeyBinding[])ArrayUtils.clone(mcIn.gameSettings.keyBindings);
+        KeyBinding[] akeybinding = ArrayUtils.clone(mcIn.gameSettings.keyBindings);
         this.listEntries = new GuiListExtended.IGuiListEntry[akeybinding.length + KeyBinding.getKeybinds().size()];
-        Arrays.sort((Object[])akeybinding);
+        Arrays.sort(akeybinding);
         int i = 0;
         String s = null;
 
@@ -66,7 +80,75 @@ public class GuiKeyBindingListTweaked extends GuiListExtended
 
     protected int getScrollBarX()
     {
-        return super.getScrollBarX() + 35;
+        return this.right - 25;
+    }
+
+    @Override
+    public void drawScreen(int mouseXIn, int mouseYIn, float partialTicks) {
+        super.drawScreen(mouseXIn,mouseYIn,partialTicks);
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder bufferbuilder = tessellator.getBuffer();
+        GlStateManager.disableDepth();
+        this.overlayBackground(0, this.top, 255, 255);
+        this.overlayBackground(this.bottom, this.height, 255, 255);
+            int i = this.getScrollBarX();
+            int j = i + 6;
+        GlStateManager.enableBlend();
+        GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE);
+        GlStateManager.disableAlpha();
+        GlStateManager.shadeModel(7425);
+        GlStateManager.disableTexture2D();
+        int i1 = 4;
+        bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX_COLOR);
+        bufferbuilder.pos((double)this.left + 4, (double)(this.top), 0.0D).tex(0.0D, 1.0D).color(0, 0, 0, 0).endVertex();
+        bufferbuilder.pos((double)this.left, (double)(this.top), 0.0D).tex(1.0D, 1.0D).color(0, 0, 0, 255).endVertex();
+        bufferbuilder.pos((double)this.left, (double)this.bottom, 0.0D).tex(1.0D, 0.0D).color(0, 0, 0, 255).endVertex();
+        bufferbuilder.pos((double)this.left + 4, (double)this.bottom, 0.0D).tex(0.0D, 0.0D).color(0, 0, 0, 0).endVertex();
+        tessellator.draw();
+        bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX_COLOR);
+        bufferbuilder.pos((double)this.right, (double)this.top, 0.0D).tex(0.0D, 1.0D).color(0, 0, 0, 255).endVertex();
+        bufferbuilder.pos((double)this.right - 4, (double)this.top, 0.0D).tex(1.0D, 1.0D).color(0, 0, 0, 0).endVertex();
+        bufferbuilder.pos((double)this.right - 4, (double)(this.bottom), 0.0D).tex(1.0D, 0.0D).color(0, 0, 0, 0).endVertex();
+        bufferbuilder.pos((double)this.right, (double)(this.bottom), 0.0D).tex(0.0D, 0.0D).color(0, 0, 0, 255).endVertex();
+        tessellator.draw();
+        int j1 = this.getMaxScroll();
+
+        if (j1 > 0)
+        {
+            int k1 = (this.bottom - this.top) * (this.bottom - this.top) / this.getContentHeight();
+            k1 = MathHelper.clamp(k1, 32, this.bottom - this.top - 8);
+            int l1 = (int)this.amountScrolled * (this.bottom - this.top - k1) / j1 + this.top;
+
+            if (l1 < this.top)
+            {
+                l1 = this.top;
+            }
+
+            bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX_COLOR);
+            bufferbuilder.pos((double)i, (double)this.bottom, 0.0D).tex(0.0D, 1.0D).color(0, 0, 0, 255).endVertex();
+            bufferbuilder.pos((double)j, (double)this.bottom, 0.0D).tex(1.0D, 1.0D).color(0, 0, 0, 255).endVertex();
+            bufferbuilder.pos((double)j, (double)this.top, 0.0D).tex(1.0D, 0.0D).color(0, 0, 0, 255).endVertex();
+            bufferbuilder.pos((double)i, (double)this.top, 0.0D).tex(0.0D, 0.0D).color(0, 0, 0, 255).endVertex();
+            tessellator.draw();
+            bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX_COLOR);
+            bufferbuilder.pos((double)i, (double)(l1 + k1), 0.0D).tex(0.0D, 1.0D).color(128, 128, 128, 255).endVertex();
+            bufferbuilder.pos((double)j, (double)(l1 + k1), 0.0D).tex(1.0D, 1.0D).color(128, 128, 128, 255).endVertex();
+            bufferbuilder.pos((double)j, (double)l1, 0.0D).tex(1.0D, 0.0D).color(128, 128, 128, 255).endVertex();
+            bufferbuilder.pos((double)i, (double)l1, 0.0D).tex(0.0D, 0.0D).color(128, 128, 128, 255).endVertex();
+            tessellator.draw();
+            bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX_COLOR);
+            bufferbuilder.pos((double)i, (double)(l1 + k1 - 1), 0.0D).tex(0.0D, 1.0D).color(192, 192, 192, 255).endVertex();
+            bufferbuilder.pos((double)(j - 1), (double)(l1 + k1 - 1), 0.0D).tex(1.0D, 1.0D).color(192, 192, 192, 255).endVertex();
+            bufferbuilder.pos((double)(j - 1), (double)l1, 0.0D).tex(1.0D, 0.0D).color(192, 192, 192, 255).endVertex();
+            bufferbuilder.pos((double)i, (double)l1, 0.0D).tex(0.0D, 0.0D).color(192, 192, 192, 255).endVertex();
+            tessellator.draw();
+        }
+
+        this.renderDecorations(mouseXIn, mouseYIn);
+        GlStateManager.enableTexture2D();
+        GlStateManager.shadeModel(7424);
+        GlStateManager.enableAlpha();
+        GlStateManager.disableBlend();
     }
 
     /**

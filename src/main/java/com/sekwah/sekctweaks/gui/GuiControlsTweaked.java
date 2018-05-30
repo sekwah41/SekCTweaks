@@ -1,6 +1,8 @@
 package com.sekwah.sekctweaks.gui;
 
 import java.io.IOException;
+
+import com.google.common.collect.Lists;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.*;
 import net.minecraft.client.resources.I18n;
@@ -176,5 +178,74 @@ public class GuiControlsTweaked extends GuiScreen
 
         this.buttonReset.enabled = flag;
         super.drawScreen(mouseX, mouseY, partialTicks);
+    }
+
+    @SideOnly(Side.CLIENT)
+    class List extends GuiSlot
+    {
+        /** A list containing the many different locale language codes. */
+        private final java.util.List<String> langCodeList = Lists.<String>newArrayList();
+        /** The map containing the Locale-Language pairs. */
+        //private final Map<String, Language> languageMap = Maps.<String, Language>newHashMap();
+
+        public List(Minecraft mcIn)
+        {
+            super(mcIn, GuiControlsTweaked.this.width, GuiControlsTweaked.this.height, 32, GuiControlsTweaked.this.height - 65 + 4, 18);
+
+            /*for (Language language : GuiLanguage.this.languageManager.getLanguages())
+            {
+                this.languageMap.put(language.getLanguageCode(), language);
+                this.langCodeList.add(language.getLanguageCode());
+            }*/
+        }
+
+        protected int getSize()
+        {
+            return this.langCodeList.size();
+        }
+
+        /**
+         * The element in the slot that was clicked, boolean for whether it was double clicked or not
+         */
+        protected void elementClicked(int slotIndex, boolean isDoubleClick, int mouseX, int mouseY)
+        {
+            /*Language language = this.languageMap.get(this.langCodeList.get(slotIndex));
+            GuiControlsTweaked.this.languageManager.setCurrentLanguage(language);
+            GuiControlsTweaked.this.game_settings_3.language = language.getLanguageCode();
+            this.mc.refreshResources();
+            GuiControlsTweaked.this.fontRenderer.setUnicodeFlag(GuiControlsTweaked.this.languageManager.isCurrentLocaleUnicode() || GuiControlsTweaked.this.game_settings_3.forceUnicodeFont);
+            GuiControlsTweaked.this.fontRenderer.setBidiFlag(GuiControlsTweaked.this.languageManager.isCurrentLanguageBidirectional());
+            GuiControlsTweaked.this.confirmSettingsBtn.displayString = I18n.format("gui.done");
+            GuiControlsTweaked.this.forceUnicodeFontBtn.displayString = GuiControlsTweaked.this.game_settings_3.getKeyBinding(GameSettings.Options.FORCE_UNICODE_FONT);
+            GuiControlsTweaked.this.game_settings_3.saveOptions();*/
+        }
+
+        /**
+         * Returns true if the element passed in is currently selected
+         */
+        protected boolean isSelected(int slotIndex)
+        {
+            return false;//((String)this.langCodeList.get(slotIndex)).equals(GuiControlsTweaked.this.languageManager.getCurrentLanguage().getLanguageCode());
+        }
+
+        /**
+         * Return the height of the content being scrolled
+         */
+        protected int getContentHeight()
+        {
+            return this.getSize() * 18;
+        }
+
+        protected void drawBackground()
+        {
+            GuiControlsTweaked.this.drawDefaultBackground();
+        }
+
+        protected void drawSlot(int slotIndex, int xPos, int yPos, int heightIn, int mouseXIn, int mouseYIn, float partialTicks)
+        {
+            GuiControlsTweaked.this.fontRenderer.setBidiFlag(true);
+            //GuiControlsTweaked.this.drawCenteredString(GuiControlsTweaked.this.fontRenderer, ((Language)this.languageMap.get(this.langCodeList.get(slotIndex))).toString(), this.width / 2, yPos + 1, 16777215);
+            //GuiControlsTweaked.this.fontRenderer.setBidiFlag(GuiControlsTweaked.this.languageManager.getCurrentLanguage().isBidirectional());
+        }
     }
 }
