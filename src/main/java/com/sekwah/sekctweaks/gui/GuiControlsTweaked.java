@@ -1,15 +1,24 @@
 package com.sekwah.sekctweaks.gui;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import com.google.common.collect.Lists;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.*;
+import net.minecraft.client.renderer.BufferBuilder;
+import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.client.settings.KeyBinding;
+import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+import org.apache.commons.lang3.ArrayUtils;
+import org.lwjgl.opengl.GL11;
 
 @SideOnly(Side.CLIENT)
 public class GuiControlsTweaked extends GuiScreen
@@ -25,6 +34,8 @@ public class GuiControlsTweaked extends GuiScreen
     public long time;
     private GuiKeyBindingListTweaked keyBindingList;
     private GuiButton buttonReset;
+
+    private GuiControlsTweaked.List categoryList;
 
     public GuiControlsTweaked(GuiScreen screen, GameSettings settings)
     {
@@ -42,6 +53,28 @@ public class GuiControlsTweaked extends GuiScreen
         this.buttonList.add(new GuiButton(200, this.width / 2 - 155 + 160, this.height - 29, 150, 20, I18n.format("gui.done")));
         this.buttonReset = this.addButton(new GuiButton(201, this.width / 2 - 155, this.height - 29, 150, 20, I18n.format("controls.resetAll")));
         this.screenTitle = I18n.format("controls.title");
+
+        // Get categories
+
+        ArrayList<String> categories = new ArrayList<>();
+        KeyBinding[] akeybinding = ArrayUtils.clone(this.mc.gameSettings.keyBindings);
+        Arrays.sort(akeybinding);
+        String s = null;
+
+        for (KeyBinding keybinding : akeybinding)
+        {
+            String s1 = keybinding.getKeyCategory();
+
+            if (!s1.equals(s))
+            {
+                s = s1;
+                categories.add(s1);
+            }
+        }
+
+
+        this.categoryList = new GuiControlsTweaked.List(this.mc, categories);
+        this.categoryList.registerScrollButtons(7, 8);
         int i = 0;
 
         for (GameSettings.Options gamesettings$options : OPTIONS_ARR)
@@ -65,6 +98,7 @@ public class GuiControlsTweaked extends GuiScreen
     public void handleMouseInput() throws IOException
     {
         super.handleMouseInput();
+        this.categoryList.handleMouseInput();
         this.keyBindingList.handleMouseInput();
     }
 
@@ -147,7 +181,7 @@ public class GuiControlsTweaked extends GuiScreen
             }
 
             if (!net.minecraftforge.client.settings.KeyModifier.isKeyCodeModifier(keyCode))
-            this.buttonId = null;
+                this.buttonId = null;
             this.time = Minecraft.getSystemTime();
             KeyBinding.resetKeyBindingArrayAndHash();
         }
@@ -163,6 +197,7 @@ public class GuiControlsTweaked extends GuiScreen
     public void drawScreen(int mouseX, int mouseY, float partialTicks)
     {
         this.drawDefaultBackground();
+        this.categoryList.drawScreen(mouseX, mouseY, partialTicks);
         this.keyBindingList.drawScreen(mouseX, mouseY, partialTicks);
         this.drawCenteredString(this.fontRenderer, this.screenTitle, this.width / 2, 8, 16777215);
         boolean flag = false;
@@ -184,14 +219,17 @@ public class GuiControlsTweaked extends GuiScreen
     class List extends GuiSlot
     {
         /** A list containing the many different locale language codes. */
-        private final java.util.List<String> langCodeList = Lists.<String>newArrayList();
+        private final java.util.List<String> categoryList = Lists.<String>newArrayList();
         /** The map containing the Locale-Language pairs. */
         //private final Map<String, Language> languageMap = Maps.<String, Language>newHashMap();
 
-        public List(Minecraft mcIn)
+        public List(Minecraft mcIn, java.util.List<String> categoryList)
         {
-            super(mcIn, GuiControlsTweaked.this.width, GuiControlsTweaked.this.height, 32, GuiControlsTweaked.this.height - 65 + 4, 18);
-
+            super(mcIn, GuiControlsTweaked.this.width - 400 - 30 - 10, GuiControlsTweaked.this.height - 32, 63, GuiControlsTweaked.this.height - 32, 18);
+            this.right = GuiControlsTweaked.this.width - 400 - 20;
+            this.left = 10;
+            this.width = this.right - this.left;
+            this.categoryList.addAll(categoryList);
             /*for (Language language : GuiLanguage.this.languageManager.getLanguages())
             {
                 this.languageMap.put(language.getLanguageCode(), language);
@@ -201,7 +239,13 @@ public class GuiControlsTweaked extends GuiScreen
 
         protected int getSize()
         {
-            return this.langCodeList.size();
+            return this.categoryList.size();
+        }
+
+        @Override
+        public int getListWidth()
+        {
+            return this.width - 10;
         }
 
         /**
@@ -225,7 +269,7 @@ public class GuiControlsTweaked extends GuiScreen
          */
         protected boolean isSelected(int slotIndex)
         {
-            return false;//((String)this.langCodeList.get(slotIndex)).equals(GuiControlsTweaked.this.languageManager.getCurrentLanguage().getLanguageCode());
+            return /*false;*//*((String)this.categoryList.get(slotIndex)).equals("")*/ slotIndex == 0;
         }
 
         /**
@@ -236,6 +280,82 @@ public class GuiControlsTweaked extends GuiScreen
             return this.getSize() * 18;
         }
 
+        @Override
+        public void drawScreen(int mouseXIn, int mouseYIn, float partialTicks) {
+            ScaledResolution res = new ScaledResolution(this.mc);
+            double scaleW = this.mc.displayWidth / res.getScaledWidth_double();
+            double scaleH = this.mc.displayHeight / res.getScaledHeight_double();
+
+            GL11.glEnable(GL11.GL_SCISSOR_TEST);
+            GL11.glScissor((int)(left      * scaleW), (int)(this.mc.displayHeight - (bottom * scaleH)),
+                    (int)(this.width * scaleW), (int)(this.height * scaleH));
+
+            super.drawScreen(mouseXIn,mouseYIn,partialTicks);
+            Tessellator tessellator = Tessellator.getInstance();
+            BufferBuilder bufferbuilder = tessellator.getBuffer();
+            GlStateManager.disableDepth();
+            this.overlayBackground(0, this.top, 255, 255);
+            this.overlayBackground(this.bottom, this.height, 255, 255);
+            int i = this.getScrollBarX();
+            int j = i + 6;
+            GlStateManager.enableBlend();
+            GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE);
+            GlStateManager.disableAlpha();
+            GlStateManager.shadeModel(GL11.GL_SMOOTH);
+            GlStateManager.disableTexture2D();
+            bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX_COLOR);
+            bufferbuilder.pos((double)this.left + 4, (double)(this.top), 0.0D).tex(0.0D, 1.0D).color(0, 0, 0, 0).endVertex();
+            bufferbuilder.pos((double)this.left, (double)(this.top), 0.0D).tex(1.0D, 1.0D).color(0, 0, 0, 255).endVertex();
+            bufferbuilder.pos((double)this.left, (double)this.bottom, 0.0D).tex(1.0D, 0.0D).color(0, 0, 0, 255).endVertex();
+            bufferbuilder.pos((double)this.left + 4, (double)this.bottom, 0.0D).tex(0.0D, 0.0D).color(0, 0, 0, 0).endVertex();
+            tessellator.draw();
+            bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX_COLOR);
+            bufferbuilder.pos((double)this.right, (double)this.top, 0.0D).tex(0.0D, 1.0D).color(0, 0, 0, 255).endVertex();
+            bufferbuilder.pos((double)this.right - 4, (double)this.top, 0.0D).tex(1.0D, 1.0D).color(0, 0, 0, 0).endVertex();
+            bufferbuilder.pos((double)this.right - 4, (double)(this.bottom), 0.0D).tex(1.0D, 0.0D).color(0, 0, 0, 0).endVertex();
+            bufferbuilder.pos((double)this.right, (double)(this.bottom), 0.0D).tex(0.0D, 0.0D).color(0, 0, 0, 255).endVertex();
+            tessellator.draw();
+            int j1 = this.getMaxScroll();
+
+            if (j1 > 0)
+            {
+                int k1 = (this.bottom - this.top) * (this.bottom - this.top) / this.getContentHeight();
+                k1 = MathHelper.clamp(k1, 32, this.bottom - this.top - 8);
+                int l1 = (int)this.amountScrolled * (this.bottom - this.top - k1) / j1 + this.top;
+
+                if (l1 < this.top)
+                {
+                    l1 = this.top;
+                }
+
+                bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX_COLOR);
+                bufferbuilder.pos((double)i, (double)this.bottom, 0.0D).tex(0.0D, 1.0D).color(0, 0, 0, 255).endVertex();
+                bufferbuilder.pos((double)j, (double)this.bottom, 0.0D).tex(1.0D, 1.0D).color(0, 0, 0, 255).endVertex();
+                bufferbuilder.pos((double)j, (double)this.top, 0.0D).tex(1.0D, 0.0D).color(0, 0, 0, 255).endVertex();
+                bufferbuilder.pos((double)i, (double)this.top, 0.0D).tex(0.0D, 0.0D).color(0, 0, 0, 255).endVertex();
+                tessellator.draw();
+                bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX_COLOR);
+                bufferbuilder.pos((double)i, (double)(l1 + k1), 0.0D).tex(0.0D, 1.0D).color(128, 128, 128, 255).endVertex();
+                bufferbuilder.pos((double)j, (double)(l1 + k1), 0.0D).tex(1.0D, 1.0D).color(128, 128, 128, 255).endVertex();
+                bufferbuilder.pos((double)j, (double)l1, 0.0D).tex(1.0D, 0.0D).color(128, 128, 128, 255).endVertex();
+                bufferbuilder.pos((double)i, (double)l1, 0.0D).tex(0.0D, 0.0D).color(128, 128, 128, 255).endVertex();
+                tessellator.draw();
+                bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX_COLOR);
+                bufferbuilder.pos((double)i, (double)(l1 + k1 - 1), 0.0D).tex(0.0D, 1.0D).color(192, 192, 192, 255).endVertex();
+                bufferbuilder.pos((double)(j - 1), (double)(l1 + k1 - 1), 0.0D).tex(1.0D, 1.0D).color(192, 192, 192, 255).endVertex();
+                bufferbuilder.pos((double)(j - 1), (double)l1, 0.0D).tex(1.0D, 0.0D).color(192, 192, 192, 255).endVertex();
+                bufferbuilder.pos((double)i, (double)l1, 0.0D).tex(0.0D, 0.0D).color(192, 192, 192, 255).endVertex();
+                tessellator.draw();
+            }
+
+            this.renderDecorations(mouseXIn, mouseYIn);
+            GlStateManager.enableTexture2D();
+            GlStateManager.shadeModel(GL11.GL_FLAT);
+            GlStateManager.enableAlpha();
+            GlStateManager.disableBlend();
+            GL11.glDisable(GL11.GL_SCISSOR_TEST);
+        }
+
         protected void drawBackground()
         {
             GuiControlsTweaked.this.drawDefaultBackground();
@@ -243,9 +363,7 @@ public class GuiControlsTweaked extends GuiScreen
 
         protected void drawSlot(int slotIndex, int xPos, int yPos, int heightIn, int mouseXIn, int mouseYIn, float partialTicks)
         {
-            GuiControlsTweaked.this.fontRenderer.setBidiFlag(true);
-            //GuiControlsTweaked.this.drawCenteredString(GuiControlsTweaked.this.fontRenderer, ((Language)this.languageMap.get(this.langCodeList.get(slotIndex))).toString(), this.width / 2, yPos + 1, 16777215);
-            //GuiControlsTweaked.this.fontRenderer.setBidiFlag(GuiControlsTweaked.this.languageManager.getCurrentLanguage().isBidirectional());
+            GuiControlsTweaked.this.drawCenteredString(GuiControlsTweaked.this.fontRenderer, I18n.format(this.categoryList.get(slotIndex)), this.left + this.width / 2, yPos + 1, 16777215);
         }
     }
 }

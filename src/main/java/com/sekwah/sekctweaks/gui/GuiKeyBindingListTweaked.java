@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiListExtended;
 import net.minecraft.client.gui.GuiSlot;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
@@ -18,6 +19,7 @@ import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.commons.lang3.ArrayUtils;
+import org.lwjgl.opengl.GL11;
 
 /**
  * @see net.minecraft.client.gui.GuiLanguage for selective list
@@ -33,8 +35,8 @@ public class GuiKeyBindingListTweaked extends GuiListExtended
     public GuiKeyBindingListTweaked(GuiControlsTweaked controls, Minecraft mcIn)
     {
         super(mcIn, 450, controls.height, 63, controls.height - 32, 20);
-        this.width = 420;
-        this.right = controls.width - 20;
+        this.width = 400;
+        this.right = controls.width - 10;
         this.left = this.right - this.width;
         this.controlsScreen = controls;
         this.mc = mcIn;
@@ -85,14 +87,21 @@ public class GuiKeyBindingListTweaked extends GuiListExtended
 
     @Override
     public void drawScreen(int mouseXIn, int mouseYIn, float partialTicks) {
+        ScaledResolution res = new ScaledResolution(this.mc);
+        double scaleW = this.mc.displayWidth / res.getScaledWidth_double();
+        double scaleH = this.mc.displayHeight / res.getScaledHeight_double();
+        GL11.glEnable(GL11.GL_SCISSOR_TEST);
+        GL11.glScissor((int)(this.left * scaleW), (int)(this.mc.displayHeight - (this.bottom * scaleH)),
+                (int)(this.width * scaleW), (int)(this.height * scaleH));
+
         super.drawScreen(mouseXIn,mouseYIn,partialTicks);
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder bufferbuilder = tessellator.getBuffer();
         GlStateManager.disableDepth();
         this.overlayBackground(0, this.top, 255, 255);
         this.overlayBackground(this.bottom, this.height, 255, 255);
-            int i = this.getScrollBarX();
-            int j = i + 6;
+        int i = this.getScrollBarX();
+        int j = i + 6;
         GlStateManager.enableBlend();
         GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE);
         GlStateManager.disableAlpha();
@@ -149,6 +158,8 @@ public class GuiKeyBindingListTweaked extends GuiListExtended
         GlStateManager.shadeModel(7424);
         GlStateManager.enableAlpha();
         GlStateManager.disableBlend();
+
+        GL11.glDisable(GL11.GL_SCISSOR_TEST);
     }
 
     /**
